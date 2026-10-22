@@ -61,10 +61,6 @@ jobs:
             -f tag_name='v1.1.0' \
             -f target_commitish="$GITHUB_SHA" \
             -f name='LunarSpoof 1.1.0 - Forge 1.8.9' \
-            -f body='LunarSpoof 1.1.0 for Minecraft 1.8.9 with Forge.
-
-Features include the ClickGUI, client-brand options, privacy settings, and Discord Rich Presence configuration. The client command no longer requires operator permissions.
-
-Install the JAR in your .minecraft/mods folder and run Minecraft 1.8.9 with Forge.' \
+            -f body='LunarSpoof 1.1.0 for Minecraft 1.8.9 with Forge. Features include the ClickGUI, client-brand options, privacy settings, and Discord Rich Presence configuration. The client command no longer requires operator permissions. Install the JAR in your .minecraft/mods folder and run Minecraft 1.8.9 with Forge.' \
             -F draft=false \
             -F prerelease=false
