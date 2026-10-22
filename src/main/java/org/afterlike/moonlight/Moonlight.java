@@ -13,7 +13,7 @@ import org.apache.logging.log4j.Logger;
 public class Moonlight {
     private static final Logger logger = LogManager.getLogger(Moonlight.class);
     private static final Moonlight instance = new Moonlight();
-    private static final String FALLBACK_LUNAR_VERSION = "v2.23.5-2642";
+    private static final String FALLBACK_LUNAR_VERSION = "v2.23.7-2643";
     private static final String VERSION = org.afterlike.moonlight.BuildConstants.VERSION;
 
     private volatile String lunarVersion = emptyToNull(BuildConstants.LUNAR_VERSION);
