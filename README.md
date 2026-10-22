@@ -58,7 +58,7 @@ Icon behavior is not guaranteed: official Lunar Client can use its own service-s
 Requires JDK 8 and Gradle 8.8 installed.
 
 ```bash
-gradle build
+gradle spotlessApply build
 ```
 
 The JAR is written to `build/libs/`. GitHub Actions builds and uploads it as an artifact on every push to `main`.
