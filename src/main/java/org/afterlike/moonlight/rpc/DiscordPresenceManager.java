@@ -115,7 +115,7 @@ public final class DiscordPresenceManager {
         if (rpc == null || !config.discordRpcEnabled) {
             return;
         }
-        DiscordRichPresence.Builder builder = DiscordRichPresence.builder()
+        DiscordRichPresence.DiscordRichPresenceBuilder builder = DiscordRichPresence.builder()
                 .name("Lunar Client")
                 .details(LunarSpoofConfig.trimTo(config.discordDetails, 128))
                 .state(LunarSpoofConfig.trimTo(config.discordState, 128))
