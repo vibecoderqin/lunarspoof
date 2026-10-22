@@ -46,7 +46,7 @@ public abstract class GuiPlayerTabOverlayMixin {
 
 	@ModifyArgs(method = "renderPlayerlist", at = @At(value = "INVOKE",
 			target = "Lnet/minecraft/client/gui/FontRenderer;drawStringWithShadow(Ljava/lang/String;FFI)I"))
-	private void moonlight$onDrawString(Args args) {
+	private void moonlight$onDrawString(Args args) {\n\t\tif (!org.afterlike.moonlight.config.LunarSpoofConfig.get().showPeerIcons)\n\t\t\treturn;
 		if (moonlight$nameToInfo == null)
 			return;
 		String text = args.get(0);
@@ -68,7 +68,7 @@ public abstract class GuiPlayerTabOverlayMixin {
 
 	@Redirect(method = "renderPlayerlist", at = @At(value = "INVOKE",
 			target = "Lnet/minecraft/client/gui/FontRenderer;getStringWidth(Ljava/lang/String;)I"))
-	private int moonlight$getStringWidth(FontRenderer fontRenderer, String text) {
+	private int moonlight$getStringWidth(FontRenderer fontRenderer, String text) {\n\t\tif (!org.afterlike.moonlight.config.LunarSpoofConfig.get().showPeerIcons)\n\t\t\treturn fontRenderer.getStringWidth(text);
 		int width = fontRenderer.getStringWidth(text);
 		if (moonlight$nameToInfo == null)
 			return width;
