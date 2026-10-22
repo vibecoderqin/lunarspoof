@@ -63,7 +63,10 @@ public final class LunarSpoofCommand extends CommandBase {
             if (value == null) { error(sender, "Use on or off."); return; }
             config.showPeerIcons = value;
             config.save();
-            success(sender, "Lunar peer icons " + (value ? "enabled" : "disabled") + ".");
+            if (!value) {
+                org.afterlike.moonlight.peers.SubscriptionManager.disconnect();
+            }
+            success(sender, "Lunar peer icons " + (value ? "enabled (reconnect to activate Lunar-service lookup)" : "disabled; Lunar-service connection closed") + ".");
             return;
         }
         if ("rpc".equals(group)) {
