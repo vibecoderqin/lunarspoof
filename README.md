@@ -51,10 +51,10 @@ Icon behavior is not guaranteed: official Lunar Client can use its own service-s
 
 ## Build from source
 
-Requires JDK 8; Gradle wrapper downloads Gradle 8.8.
+Requires JDK 8 and Gradle 8.8 installed.
 
 ```bash
-bash gradlew build
+gradle build
 ```
 
 The JAR is written to `build/libs/`. GitHub Actions builds and uploads it as an artifact on every push to `main`.
