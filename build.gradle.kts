@@ -19,7 +19,7 @@ plugins {
     id("net.kyori.blossom") version "2.2.0"
     id("gg.essential.loom") version "0.10.0.+"
     id("com.diffplug.spotless") version "8.1.0"
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.gradleup.shadow") version "8.3.10"
     id("dev.architectury.architectury-pack200") version "0.1.3"
 }
 
