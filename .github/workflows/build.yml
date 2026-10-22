@@ -20,6 +20,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
+      - name: Install Gradle 8.8
+        run: |
+          curl -fsSL https://services.gradle.org/distributions/gradle-8.8-bin.zip -o /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp
+          echo "/tmp/gradle-8.8/bin" >> "$GITHUB_PATH"
       - name: Fetch current Lunar 1.8.9 build metadata
         shell: bash
         run: |
@@ -31,7 +36,7 @@ jobs:
             echo "Using fallback version metadata."
           fi
       - name: Build mod
-        run: bash gradlew build --no-daemon --stacktrace -PlunarVersion="${lunarVersion}" -PlunarGitCommit="${lunarGitCommit}"
+        run: gradle build --no-daemon --stacktrace -PlunarVersion="${lunarVersion}" -PlunarGitCommit="${lunarGitCommit}"
       - uses: actions/upload-artifact@v4
         with:
           name: LunarSpoof-Forge-1.8.9
