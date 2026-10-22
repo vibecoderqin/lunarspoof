@@ -150,31 +150,45 @@ tasks {
         }
     }
 
-    // Legacy TinyRemapper cannot parse Java 20/21 multi-release classes in
-    // the Discord IPC dependency. Minecraft 1.8.9 runs on Java 8, so build a
-    // clean remap input that contains only the Java 8 base classes.
-    val legacyRemapInput = register<Jar>("legacyRemapInput") {
+    // Remove multi-release Java 20/21 entries before legacy TinyRemapper.
+    // A ZIP-level filter is used because the legacy remapper scans every class entry.
+    val legacyRemapInputFile = layout.buildDirectory.file(
+        "intermediates/LunarSpoof-${project.version}-legacy-remap-input.jar"
+    )
+    val legacyRemapInput = register("legacyRemapInput") {
         dependsOn(shadowJar)
-        destinationDirectory.set(layout.buildDirectory.dir("intermediates"))
-        archiveBaseName.set("LunarSpoof")
-        archiveClassifier.set("legacy-remap-input")
-        from({
-            zipTree(shadowJar.get().archiveFile.get().asFile)
-        }) {
-            exclude("META-INF/versions/**")
-            exclude("META-INF/MANIFEST.MF")
-        }
-        manifest.attributes.run {
-            this["FMLCorePluginContainsFMLMod"] = "true"
-            this["ForceLoadAsMod"] = "true"
-            this["TweakClass"] = "org.spongepowered.asm.launch.MixinTweaker"
-            this["MixinConfigs"] = "mixins.moonlight.json"
+        inputs.file(shadowJar.get().archiveFile)
+        outputs.file(legacyRemapInputFile)
+        doLast {
+            val outputFile = legacyRemapInputFile.get().asFile
+            outputFile.parentFile.mkdirs()
+            java.util.zip.ZipFile(shadowJar.get().archiveFile.get().asFile).use { zip ->
+                java.util.zip.ZipOutputStream(
+                    java.io.BufferedOutputStream(java.io.FileOutputStream(outputFile))
+                ).use { output ->
+                    val seenEntries = HashSet<String>()
+                    val entries = zip.entries()
+                    while (entries.hasMoreElements()) {
+                        val entry = entries.nextElement()
+                        if (entry.name.startsWith("META-INF/versions/")) continue
+                        if (!seenEntries.add(entry.name)) continue
+                        val cleanEntry = java.util.zip.ZipEntry(entry.name)
+                        if (entry.time >= 0L) cleanEntry.time = entry.time
+                        output.putNextEntry(cleanEntry)
+                        if (!entry.isDirectory) {
+                            zip.getInputStream(entry).use { input -> input.copyTo(output) }
+                        }
+                        output.closeEntry()
+                    }
+                }
+            }
         }
     }
 
     val remapJar = named<RemapJarTask>("remapJar") {
         archiveClassifier.set("forge")
-        input.set(legacyRemapInput.get().archiveFile)
+        dependsOn(legacyRemapInput)
+        input.set(legacyRemapInputFile)
     }
 
     shadowJar {
