@@ -69,6 +69,9 @@ public class ForgeModEntry {
         }
         Moonlight.get().clearAuth();
         AuthClient.fetchJwtAsync(jwt -> {
+            if (!LunarSpoofConfig.get().showPeerIcons) {
+                return;
+            }
             Moonlight.get().setAuthenticatorJwt(jwt, currentUuid);
             SubscriptionManager.connect(jwt);
         }, err -> LOGGER.warn("Lunar peer-icon connection unavailable; brand spoofing still works", err));
