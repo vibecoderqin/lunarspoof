@@ -137,7 +137,7 @@ public final class LunarSpoofClickGui extends GuiScreen {
                 0xFF4C4775, 0xFF242943);
         if (inside(mouseX, mouseY, panel.x, panel.y, panel.x + panel.width, panel.y + HEADER_HEIGHT)) {
             drawRect(panel.x + 1, panel.y + 1, panel.x + panel.width - 1, panel.y + HEADER_HEIGHT,
-                    0x283FFFFFF);
+                    0x28FFFFFF);
         }
         drawString(fontRendererObj, panel.title, panel.x + 7, panel.y + 5, 0xFFF0EAFE);
         drawString(fontRendererObj, panel.collapsed ? "+" : "-", panel.x + panel.width - 13, panel.y + 4,
@@ -226,11 +226,13 @@ public final class LunarSpoofClickGui extends GuiScreen {
                 || insideField(detailsField, mouseX, mouseY) || insideField(stateField, mouseX, mouseY)
                 || insideField(imageKeyField, mouseX, mouseY))) fieldClicked = true;
 
-        customBrandField.mouseClicked(mouseX, mouseY, mouseButton);
-        applicationIdField.mouseClicked(mouseX, mouseY, mouseButton);
-        detailsField.mouseClicked(mouseX, mouseY, mouseButton);
-        stateField.mouseClicked(mouseX, mouseY, mouseButton);
-        imageKeyField.mouseClicked(mouseX, mouseY, mouseButton);
+        if (!brandPanel.collapsed) customBrandField.mouseClicked(mouseX, mouseY, mouseButton);
+        if (!discordPanel.collapsed) {
+            applicationIdField.mouseClicked(mouseX, mouseY, mouseButton);
+            detailsField.mouseClicked(mouseX, mouseY, mouseButton);
+            stateField.mouseClicked(mouseX, mouseY, mouseButton);
+            imageKeyField.mouseClicked(mouseX, mouseY, mouseButton);
+        }
 
         if (fieldClicked) {
             if (mouseButton == 0) commitTextFields(false);
