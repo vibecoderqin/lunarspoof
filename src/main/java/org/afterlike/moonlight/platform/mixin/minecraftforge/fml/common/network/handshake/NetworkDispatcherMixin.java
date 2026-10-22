@@ -30,7 +30,8 @@ public abstract class NetworkDispatcherMixin {
 	@Inject(method = "channelRead0*", at = @At("HEAD"), cancellable = true, remap = false)
 	private void moonlight$onChannelRead0(ChannelHandlerContext ctx, Packet<?> msg,
 			CallbackInfo ci) {
-		if (moonlight$handshakeAborted || Minecraft.getMinecraft().isSingleplayer()\n\t\t\t\t|| !org.afterlike.moonlight.Moonlight.get().shouldHideForgeHandshake()) {
+		if (moonlight$handshakeAborted || Minecraft.getMinecraft().isSingleplayer()
+				|| !org.afterlike.moonlight.Moonlight.get().shouldHideForgeHandshake()) {
 			return;
 		}
 		if (msg instanceof S3FPacketCustomPayload) {
@@ -56,7 +57,8 @@ public abstract class NetworkDispatcherMixin {
 			remap = false)
 	private void moonlight$onHandleClientSideCustomPacket(S3FPacketCustomPayload msg,
 			ChannelHandlerContext context, CallbackInfoReturnable<Boolean> cir) {
-		if (!Minecraft.getMinecraft().isSingleplayer()\n\t\t\t\t&& org.afterlike.moonlight.Moonlight.get().shouldHideForgeHandshake()) {
+		if (!Minecraft.getMinecraft().isSingleplayer()
+				&& org.afterlike.moonlight.Moonlight.get().shouldHideForgeHandshake()) {
 			String channelName = msg.getChannelName();
 			if (moonlight$handshakeAborted
 					&& ("FML|HS".equals(channelName) || "FML|MP".equals(channelName))) {
