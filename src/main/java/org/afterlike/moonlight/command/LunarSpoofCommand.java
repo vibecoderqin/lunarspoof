@@ -34,6 +34,12 @@ public final class LunarSpoofCommand extends CommandBase {
     }
 
     @Override
+    public int getRequiredPermissionLevel() {
+        // This is a client-only settings GUI; it must work without server OP permissions.
+        return 0;
+    }
+
+    @Override
     public void processCommand(ICommandSender sender, String[] args) throws CommandException {
         LunarSpoofConfig config = LunarSpoofConfig.get();
         if (args.length == 0 || "gui".equalsIgnoreCase(args[0])) {
