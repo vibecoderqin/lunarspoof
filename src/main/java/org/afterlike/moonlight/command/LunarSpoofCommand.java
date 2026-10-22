@@ -3,6 +3,7 @@ package org.afterlike.moonlight.command;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import net.minecraft.client.Minecraft;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -12,6 +13,7 @@ import net.minecraft.util.EnumChatFormatting;
 import net.minecraftforge.client.ClientCommandHandler;
 import org.afterlike.moonlight.Moonlight;
 import org.afterlike.moonlight.config.LunarSpoofConfig;
+import org.afterlike.moonlight.gui.LunarSpoofClickGui;
 import org.afterlike.moonlight.rpc.DiscordPresenceManager;
 
 /** Client-only settings command. Arguments are never sent to the server. */
@@ -34,7 +36,11 @@ public final class LunarSpoofCommand extends CommandBase {
     @Override
     public void processCommand(ICommandSender sender, String[] args) throws CommandException {
         LunarSpoofConfig config = LunarSpoofConfig.get();
-        if (args.length == 0 || "help".equalsIgnoreCase(args[0])) {
+        if (args.length == 0 || "gui".equalsIgnoreCase(args[0])) {
+            Minecraft.getMinecraft().displayGuiScreen(new LunarSpoofClickGui());
+            return;
+        }
+        if ("help".equalsIgnoreCase(args[0])) {
             help(sender);
             return;
         }
