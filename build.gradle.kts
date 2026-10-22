@@ -102,6 +102,7 @@ repositories {
     maven("https://repo.spongepowered.org/maven/")
     maven("https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1")
     maven("https://repo.lunarclient.dev")
+    maven("https://maven.firstdark.dev/releases")
 }
 
 val shade: Configuration by configurations.creating {
@@ -114,6 +115,8 @@ dependencies {
     forge("net.minecraftforge:forge:1.8.9-11.15.1.2318-1.8.9")
 
     shade("com.google.code.gson:gson:2.13.2")
+    shade("dev.firstdark.discordrpc:discord-rpc:1.0.6:legacy")
+    shade("org.slf4j:slf4j-api:2.0.16")
     shade("com.lunarclient:apollo-protos:0.0.6")
     shade("org.spongepowered:mixin:0.7.11-SNAPSHOT") {
         isTransitive = false
@@ -169,6 +172,7 @@ tasks {
         relocateInside("com.google.gson")
         relocateInside("com.google.protobuf")
         relocateInside("com.lunarclient.apollo")
+        relocateInside("dev.firstdark.rpc")
     }
 
     assemble.get().dependsOn(remapJar)
