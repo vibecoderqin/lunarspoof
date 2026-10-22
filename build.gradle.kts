@@ -160,6 +160,9 @@ tasks {
         destinationDirectory.set(layout.buildDirectory.dir("intermediates"))
         archiveClassifier.set("non-obfuscated-with-deps")
         configurations = listOf(shade)
+        // Minecraft 1.8.9 runs on Java 8; keep the Java 8 base classes only.
+        // Loom's legacy TinyRemapper cannot parse Java 21 multi-release class files.
+        exclude("META-INF/versions/**")
 
         doLast {
             configurations.forEach {
