@@ -195,6 +195,14 @@ tasks {
         archiveClassifier.set("forge")
         dependsOn(legacyRemapInput)
         input.set(legacyRemapInputFile)
+        // The shaded legacy RPC jar is already in the remap input. Do not
+        // scan it again as an external classpath jar: it contains Java 21
+        // multi-release entries that TinyRemapper 0.10 cannot parse.
+        classpath.setFrom(
+            configurations.getByName("compileClasspath").filter { file ->
+                !file.name.startsWith("discord-rpc-")
+            }
+        )
     }
 
     shadowJar {
