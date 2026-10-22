@@ -31,7 +31,7 @@ jobs:
           if python3 scripts/fetch_lunar_version.py >> "$GITHUB_ENV"; then
             echo "Fetched Lunar build metadata."
           else
-            echo "lunarVersion=v2.23.5-2642" >> "$GITHUB_ENV"
+            echo "lunarVersion=v2.23.7-2643" >> "$GITHUB_ENV"
             echo "lunarGitCommit=unknown" >> "$GITHUB_ENV"
             echo "Using fallback version metadata."
           fi
