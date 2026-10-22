@@ -1,16 +1,16 @@
 [
   {
-    "modid": "moonlight",
-    "name": "Moonlight",
-    "description": "",
+    "modid": "lunarspoof",
+    "name": "LunarSpoof",
+    "description": "Configurable client-brand privacy, Lunar peer icons, Apollo compatibility and optional Discord Rich Presence.",
     "version": "{{ version }}",
     "mcversion": "1.8.9",
-    "url": "https://github.com/polariscli/Moonlight",
+    "url": "https://github.com/vibecoderqin/lunarspoof",
     "updateUrl": "",
     "authorList": [
       "polaris"
     ],
-    "credits": "",
+    "credits": "Based on GPL-3.0-licensed Moonlight (zhgmx/Moonlight), with modifications.",
     "logoFile": "",
     "screenshots": [],
     "dependencies": []
