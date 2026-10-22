@@ -35,6 +35,8 @@ jobs:
             echo "lunarGitCommit=unknown" >> "$GITHUB_ENV"
             echo "Using fallback version metadata."
           fi
+      - name: Format Java sources
+        run: gradle spotlessApply --no-daemon -PlunarVersion="${lunarVersion}" -PlunarGitCommit="${lunarGitCommit}"
       - name: Build mod
         run: gradle build --no-daemon --stacktrace -PlunarVersion="${lunarVersion}" -PlunarGitCommit="${lunarGitCommit}"
       - uses: actions/upload-artifact@v4
