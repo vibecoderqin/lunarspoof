@@ -177,7 +177,8 @@ public final class LunarSpoofCommand extends CommandBase {
 
     private static void help(ICommandSender sender) {
         info(sender, "LunarSpoof — local client settings (not sent as chat).");
-        info(sender, "/lunarspoof status");
+        info(sender, "/lunarspoof — open the ClickGUI; /lunarspoof gui — reopen it.");
+        info(sender, "/lunarspoof status — show current settings.");
         info(sender, "/lunarspoof brand <lunar|vanilla|forge|custom <text>>");
         info(sender, "/lunarspoof handshake <on|off>  |  /lunarspoof icons <on|off>");
         info(sender, "/lunarspoof rpc <status|on|off|appid <id>|details <text>|state <text>|image <key|off>>");
