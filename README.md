@@ -2,7 +2,7 @@
 
 Client-side mod for Minecraft Java 1.8.9 / Forge 11.15.1.2318. It combines configurable client-brand reporting, optional Forge/FML handshake suppression, Lunar peer-icon support through the Lunar services protocol, and optional Discord Rich Presence.
 
-This repository now includes GPL-3.0-licensed code adapted from [zhgmx/Moonlight](https://github.com/zhgmx/Moonlight), which implements the Apollo protocol and Lunar peer discovery. The license was changed to GPL-3.0 to comply with that code's license. See `LICENSE`.
+This repository includes GPL-3.0-licensed code adapted from [zhgmx/Moonlight](https://github.com/zhgmx/Moonlight), which implements the Apollo protocol and Lunar peer discovery. The ClickGUI window layout and interaction model are inspired by [BleachHack Legacy](https://github.com/BleachDev/bleachhack-legacy/) (GPL-3.0), but the port only contains LunarSpoof settings controls and no BleachHack gameplay modules. The license is GPL-3.0; see `LICENSE`.
 
 ## Features
 
@@ -10,11 +10,13 @@ This repository now includes GPL-3.0-licensed code adapted from [zhgmx/Moonlight
 - Optional FML handshake suppression; some Forge-only servers may refuse connections when enabled.
 - Lunar peer detection and local tab-list icons where Lunar's services provide the required information.
 - Optional Discord Rich Presence using your own Discord Developer Application ID. The default status avoids showing the server address.
-- In-game client command: `/lunarspoof` (aliases `/lspoof`, `/ls`).
+- Graphical ClickGUI: run `/lunarspoof` (aliases `/lspoof`, `/ls`) to open the draggable, collapsible settings windows.
+- Text command help: `/lunarspoof help`; use `/lunarspoof gui` to reopen the ClickGUI.
 
 ## Commands
 
-- `/lunarspoof` — help.
+- `/lunarspoof` — open the ClickGUI.
+- `/lunarspoof help` — text command help.
 - `/lunarspoof status` — show current settings.
 - `/lunarspoof brand <lunar|vanilla|forge|custom <text>>` — choose the client brand sent on subsequent connections.
 - `/lunarspoof handshake <on|off>` — toggle suppression of the Forge/FML handshake.
@@ -23,6 +25,8 @@ This repository now includes GPL-3.0-licensed code adapted from [zhgmx/Moonlight
 - `/lunarspoof rpc on|off` — enable/disable Rich Presence.
 - `/lunarspoof rpc details <text>` and `/lunarspoof rpc state <text>` — change visible status text.
 - `/lunarspoof rpc image <asset-key|off>` — set the large image key (the key must exist in your Discord application).
+
+The ClickGUI has **Client Brand**, **Privacy**, and **Discord RPC** windows. Drag a title bar to move a window; right-click its title bar (or click the collapse marker) to collapse it. Input values are saved when the screen closes; feature toggles save immediately.
 
 Settings persist in `.minecraft/config/lunarspoof.json`.
 
