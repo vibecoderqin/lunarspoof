@@ -1,4 +1,10 @@
 import dev.architectury.pack200.java.Pack200Adapter
+import java.io.BufferedOutputStream
+import java.io.FileOutputStream
+import java.util.HashSet
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
+import java.util.zip.ZipOutputStream
 import net.fabricmc.loom.task.RemapJarTask
 import org.apache.commons.lang3.SystemUtils
 
@@ -162,9 +168,9 @@ tasks {
         doLast {
             val outputFile = legacyRemapInputFile.get().asFile
             outputFile.parentFile.mkdirs()
-            java.util.zip.ZipFile(shadowJar.get().archiveFile.get().asFile).use { zip ->
-                java.util.zip.ZipOutputStream(
-                    java.io.BufferedOutputStream(java.io.FileOutputStream(outputFile))
+            ZipFile(shadowJar.get().archiveFile.get().asFile).use { zip ->
+                ZipOutputStream(
+                    BufferedOutputStream(FileOutputStream(outputFile))
                 ).use { output ->
                     val seenEntries = HashSet<String>()
                     val entries = zip.entries()
@@ -172,7 +178,7 @@ tasks {
                         val entry = entries.nextElement()
                         if (entry.name.startsWith("META-INF/versions/")) continue
                         if (!seenEntries.add(entry.name)) continue
-                        val cleanEntry = java.util.zip.ZipEntry(entry.name)
+                        val cleanEntry = ZipEntry(entry.name)
                         if (entry.time >= 0L) cleanEntry.time = entry.time
                         output.putNextEntry(cleanEntry)
                         if (!entry.isDirectory) {
