@@ -1,0 +1,13 @@
+[
+  {
+    "modid": "lunarspoof",
+    "name": "LunarSpoof",
+    "description": "Registers the Lunar-Client plugin channel for compatible public server APIs.",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "https://github.com/vibecoderqin/lunarspoof",
+    "authorList": ["vibecoderqin"],
+    "credits": "Independent 1.8.9 implementation of publicly described client-brand/channel behavior.",
+    "dependencies": []
+  }
+]
