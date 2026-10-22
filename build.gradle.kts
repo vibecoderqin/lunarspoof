@@ -111,9 +111,13 @@ repositories {
     maven("https://maven.firstdark.dev/releases")
 }
 
-val shade: Configuration by configurations.creating {
-    configurations.implementation.get().extendsFrom(this)
+val shade: Configuration by configurations.creating
+val discordRpcCompile: Configuration by configurations.creating {
+    isTransitive = false
 }
+val sanitizedDiscordRpcFile = layout.buildDirectory.file(
+    "intermediates/discord-rpc-1.0.6-legacy-java8.jar"
+)
 
 dependencies {
     minecraft("com.mojang:minecraft:1.8.9")
@@ -127,6 +131,19 @@ dependencies {
     shade("org.spongepowered:mixin:0.7.11-SNAPSHOT") {
         isTransitive = false
     }
+
+    // Compile against Java 8 base classes only. The original legacy RPC artifact
+    // is still shaded into the distributable mod, but its Java 20/21 multi-release
+    // entries must not be scanned by Minecraft 1.8.9's legacy TinyRemapper.
+    discordRpcCompile("dev.firstdark.discordrpc:discord-rpc:1.0.6:legacy")
+    compileOnly(files(sanitizedDiscordRpcFile))
+    implementation("com.google.code.gson:gson:2.13.2")
+    implementation("org.slf4j:slf4j-api:2.0.16")
+    implementation("com.lunarclient:apollo-protos:0.0.6")
+    implementation("org.spongepowered:mixin:0.7.11-SNAPSHOT") {
+        isTransitive = false
+    }
+
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT")
 
     runtimeOnly("me.djtheredstoner:DevAuth-forge-legacy:1.2.1")
@@ -134,9 +151,36 @@ dependencies {
 
 // Tasks:
 tasks {
+    val sanitizeDiscordRpc = register("sanitizeDiscordRpc") {
+        inputs.files(discordRpcCompile)
+        outputs.file(sanitizedDiscordRpcFile)
+        doLast {
+            val outputFile = sanitizedDiscordRpcFile.get().asFile
+            outputFile.parentFile.mkdirs()
+            ZipFile(discordRpcCompile.singleFile).use { zip ->
+                ZipOutputStream(BufferedOutputStream(FileOutputStream(outputFile))).use { output ->
+                    val seenEntries = HashSet<String>()
+                    val entries = zip.entries()
+                    while (entries.hasMoreElements()) {
+                        val entry = entries.nextElement()
+                        if (entry.name.startsWith("META-INF/versions/")) continue
+                        if (!seenEntries.add(entry.name)) continue
+                        val cleanEntry = ZipEntry(entry.name)
+                        if (entry.time >= 0L) cleanEntry.time = entry.time
+                        output.putNextEntry(cleanEntry)
+                        if (!entry.isDirectory) {
+                            zip.getInputStream(entry).use { input -> input.copyTo(output) }
+                        }
+                        output.closeEntry()
+                    }
+                }
+            }
+        }
+    }
+
     withType(JavaCompile::class) {
         options.encoding = "UTF-8"
-        dependsOn("generateJavaTemplates", "generateResourceTemplates")
+        dependsOn("generateJavaTemplates", "generateResourceTemplates", sanitizeDiscordRpc)
     }
 
     withType(ProcessResources::class) {
@@ -195,14 +239,6 @@ tasks {
         archiveClassifier.set("forge")
         dependsOn(legacyRemapInput)
         input.set(legacyRemapInputFile)
-        // The shaded legacy RPC jar is already in the remap input. Do not
-        // scan it again as an external classpath jar: it contains Java 21
-        // multi-release entries that TinyRemapper 0.10 cannot parse.
-        classpath.setFrom(
-            configurations.getByName("compileClasspath").filter { file ->
-                !file.name.startsWith("discord-rpc-")
-            }
-        )
     }
 
     shadowJar {
