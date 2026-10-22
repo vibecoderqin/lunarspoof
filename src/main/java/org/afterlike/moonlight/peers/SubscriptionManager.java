@@ -31,6 +31,18 @@ public final class SubscriptionManager {
 		return instance != null && instance.wsClient != null && instance.wsClient.isConnected();
 	}
 
+	/** Stop Lunar peer-service connections and discard cached peer data. */
+	public static void disconnect() {
+		if (instance == null)
+			return;
+		if (instance.wsClient != null) {
+			instance.wsClient.disconnect();
+			instance.wsClient = null;
+		}
+		instance.fetchedSet.clear();
+		PeerRegistry.getInstance().clear();
+	}
+
 	/**
 	 * Disconnects any existing WS and creates a fresh connection. Called on first
 	 * auth and on account switch.
