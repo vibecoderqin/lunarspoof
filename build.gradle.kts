@@ -6,7 +6,7 @@ import org.apache.commons.lang3.SystemUtils
 
 // Version from GitHub Tag:
 val gitRef : String? = System.getenv("GITHUB_REF_NAME")
-version = gitRef ?: "dev"
+version = "1.1.0"
 
 // Lunar Properties:
 val lunarVersion = findProperty("lunarVersion")?.toString() ?: ""
@@ -138,7 +138,7 @@ tasks {
     }
 
     withType(Jar::class) {
-        archiveBaseName.set("Moonlight")
+        archiveBaseName.set("LunarSpoof")
         archiveVersion.set(project.version.toString())
         archiveClassifier.set("without-deps")
         destinationDirectory.set(layout.buildDirectory.dir("intermediates"))
@@ -173,6 +173,7 @@ tasks {
         relocateInside("com.google.protobuf")
         relocateInside("com.lunarclient.apollo")
         relocateInside("dev.firstdark.rpc")
+        relocateInside("org.slf4j")
     }
 
     assemble.get().dependsOn(remapJar)
