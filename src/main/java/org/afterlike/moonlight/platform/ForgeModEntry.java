@@ -58,6 +58,10 @@ public class ForgeModEntry {
      */
     @SubscribeEvent
     public void onConnectedToServer(FMLNetworkEvent.ClientConnectedToServerEvent event) {
+        if (!LunarSpoofConfig.get().showPeerIcons) {
+            SubscriptionManager.disconnect();
+            return;
+        }
         UUID currentUuid = Minecraft.getMinecraft().getSession().getProfile().getId();
         if (currentUuid != null && currentUuid.equals(Moonlight.get().getAuthenticatedUuid())
                 && SubscriptionManager.isConnected()) {
