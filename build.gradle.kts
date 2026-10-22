@@ -150,10 +150,31 @@ tasks {
         }
     }
 
+    // Legacy TinyRemapper cannot parse Java 20/21 multi-release classes in
+    // the Discord IPC dependency. Minecraft 1.8.9 runs on Java 8, so build a
+    // clean remap input that contains only the Java 8 base classes.
+    val legacyRemapInput = register<Jar>("legacyRemapInput") {
+        dependsOn(shadowJar)
+        destinationDirectory.set(layout.buildDirectory.dir("intermediates"))
+        archiveBaseName.set("LunarSpoof")
+        archiveClassifier.set("legacy-remap-input")
+        from({
+            zipTree(shadowJar.get().archiveFile.get().asFile)
+        }) {
+            exclude("META-INF/versions/**")
+            exclude("META-INF/MANIFEST.MF")
+        }
+        manifest.attributes.run {
+            this["FMLCorePluginContainsFMLMod"] = "true"
+            this["ForceLoadAsMod"] = "true"
+            this["TweakClass"] = "org.spongepowered.asm.launch.MixinTweaker"
+            this["MixinConfigs"] = "mixins.moonlight.json"
+        }
+    }
+
     val remapJar = named<RemapJarTask>("remapJar") {
         archiveClassifier.set("forge")
-        from(shadowJar)
-        input.set(shadowJar.get().archiveFile)
+        input.set(legacyRemapInput.get().archiveFile)
     }
 
     shadowJar {
