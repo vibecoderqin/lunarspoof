@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetHandlerPlayClient;
@@ -19,6 +20,7 @@ import org.afterlike.moonlight.peers.auth.AuthClient;
 
 public final class SubscriptionManager {
     private static volatile SubscriptionManager instance;
+    private static final AtomicLong AUTH_EPOCH = new AtomicLong();
     private final Set<UUID> fetchedSet = ConcurrentHashMap.newKeySet();
     private volatile WSClient wsClient;
 
@@ -36,8 +38,19 @@ public final class SubscriptionManager {
         return client != null && client.isConnected();
     }
 
+    /** Start a new auth attempt and invalidate callbacks belonging to older attempts. */
+    public static long beginAuthAttempt() {
+        return AUTH_EPOCH.incrementAndGet();
+    }
+
+    /** Whether an asynchronous authentication callback still belongs to the active attempt. */
+    public static boolean isCurrentAuthAttempt(long epoch) {
+        return AUTH_EPOCH.get() == epoch;
+    }
+
     /** Stop Lunar peer-service connections and discard cached peer data and auth state. */
     public static void disconnect() {
+        AUTH_EPOCH.incrementAndGet();
         SubscriptionManager manager = instance;
         if (manager != null) {
             WSClient oldClient = manager.wsClient;
