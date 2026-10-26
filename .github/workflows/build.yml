@@ -49,9 +49,10 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-  
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
+    # Publish v1.1.1 once from the main-branch release commit. The tag-triggered
+    # run skips republishing v1.1.1; later version tags still publish normally.
+    if: (startsWith(github.ref, 'refs/tags/v') && github.ref_name != 'v1.1.1') || (github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[publish v1.1.1]'))
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -64,6 +65,8 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: LunarSpoof ${{ github.ref_name }} - Forge 1.8.9
+          tag_name: ${{ github.ref == 'refs/heads/main' && 'v1.1.1' || github.ref_name }}
+          target_commitish: ${{ github.sha }}
+          name: LunarSpoof ${{ github.ref == 'refs/heads/main' && '1.1.1' || github.ref_name }} - Forge 1.8.9
           generate_release_notes: true
           files: dist/LunarSpoof-*-forge.jar
