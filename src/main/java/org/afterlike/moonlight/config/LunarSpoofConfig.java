@@ -18,17 +18,17 @@ public final class LunarSpoofConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static volatile LunarSpoofConfig instance = new LunarSpoofConfig();
 
-    public String brandMode = "lunar";
-    public String customBrand = "custom-client";
-    public boolean hideForgeHandshake = true;
-    public boolean showPeerIcons = true;
+    public volatile String brandMode = "lunar";
+    public volatile String customBrand = "custom-client";
+    public volatile boolean hideForgeHandshake = true;
+    public volatile boolean showPeerIcons = true;
 
-    public boolean discordRpcEnabled = false;
-    public String discordApplicationId = "";
-    public String discordDetails = "Minecraft 1.8.9";
-    public String discordState = "Lunar Client";
-    public String discordLargeImageKey = "lunar_logo";
-    public String discordLargeImageText = "Lunar Client • Minecraft 1.8.9";
+    public volatile boolean discordRpcEnabled = false;
+    public volatile String discordApplicationId = "";
+    public volatile String discordDetails = "Minecraft 1.8.9";
+    public volatile String discordState = "Lunar Client";
+    public volatile String discordLargeImageKey = "lunar_logo";
+    public volatile String discordLargeImageText = "Lunar Client • Minecraft 1.8.9";
 
     private LunarSpoofConfig() {
     }
