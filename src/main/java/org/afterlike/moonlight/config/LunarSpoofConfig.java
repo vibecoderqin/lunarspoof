@@ -100,7 +100,7 @@ public final class LunarSpoofConfig {
             brandMode = brandMode.toLowerCase(java.util.Locale.ROOT);
         }
         if (customBrand == null) customBrand = "custom-client";
-        customBrand = trimTo(customBrand, 128);
+        customBrand = sanitizeBrand(customBrand);
         if (discordApplicationId == null) discordApplicationId = "";
         discordApplicationId = discordApplicationId.trim();
         if (discordDetails == null || discordDetails.trim().isEmpty()) discordDetails = "Minecraft 1.8.9";
@@ -111,6 +111,12 @@ public final class LunarSpoofConfig {
         discordLargeImageKey = trimTo(discordLargeImageKey, 256);
         if (discordLargeImageText == null) discordLargeImageText = "";
         discordLargeImageText = trimTo(discordLargeImageText, 128);
+    }
+
+    /** Strip control characters before a user-supplied brand reaches network payloads or logs. */
+    public static String sanitizeBrand(String value) {
+        if (value == null) return "custom-client";
+        return trimTo(value.replaceAll("[\\p{Cntrl}]", ""), 128);
     }
 
     public static String trimTo(String value, int maxLength) {
