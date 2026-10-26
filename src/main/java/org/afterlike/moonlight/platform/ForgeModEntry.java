@@ -68,8 +68,10 @@ public class ForgeModEntry {
             return;
         }
         Moonlight.get().clearAuth();
+        final long authAttempt = SubscriptionManager.beginAuthAttempt();
         AuthClient.fetchJwtAsync(jwt -> {
-            if (!LunarSpoofConfig.get().showPeerIcons) {
+            if (!LunarSpoofConfig.get().showPeerIcons
+                    || !SubscriptionManager.isCurrentAuthAttempt(authAttempt)) {
                 return;
             }
             UUID liveUuid = Minecraft.getMinecraft().getSession().getProfile().getId();
