@@ -67,7 +67,8 @@ public class ForgeModEntry {
                 && SubscriptionManager.isConnected()) {
             return;
         }
-        Moonlight.get().clearAuth();
+        // Stop an old account's service socket before starting fresh authentication.
+        SubscriptionManager.disconnect();
         final long authAttempt = SubscriptionManager.beginAuthAttempt();
         AuthClient.fetchJwtAsync(jwt -> {
             if (!LunarSpoofConfig.get().showPeerIcons
