@@ -8,11 +8,10 @@ import java.util.zip.ZipOutputStream
 import net.fabricmc.loom.task.RemapJarTask
 import org.apache.commons.lang3.SystemUtils
 
-// Buildscript based on https://github.com/lineargraph/Forge1.8.9Template (Unlicense)
-
-// Version from GitHub Tag:
-val gitRef : String? = System.getenv("GITHUB_REF_NAME")
-version = "1.1.0"
+// Use the tag version for release builds; local and main builds use the current development version.
+val gitRef: String? = System.getenv("GITHUB_REF_NAME")
+val releaseVersion = gitRef?.removePrefix("v")?.takeIf { it.matches(Regex("\\d+\\.\\d+\\.\\d+")) }
+version = releaseVersion ?: "1.1.1"
 
 // Lunar Properties:
 val lunarVersion = findProperty("lunarVersion")?.toString() ?: ""
@@ -266,4 +265,3 @@ tasks {
 
     assemble.get().dependsOn(remapJar)
 }
-
