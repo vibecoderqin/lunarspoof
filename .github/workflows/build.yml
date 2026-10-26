@@ -1,5 +1,8 @@
 name: Build LunarSpoof for Forge 1.8.9
 
+permissions:
+  contents: write
+
 on:
   push:
     branches: [main]
@@ -45,3 +48,11 @@ jobs:
           path: build/libs/*.jar
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: LunarSpoof ${{ github.ref_name }} - Forge 1.8.9
+          generate_release_notes: true
+          files: build/libs/LunarSpoof-*-forge.jar
