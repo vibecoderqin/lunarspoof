@@ -7,6 +7,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import net.minecraft.client.Minecraft;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,6 +48,11 @@ public final class LunarSpoofConfig {
             }
         }
         if (loaded == null) {
+            // Preserve an unreadable file before defaults overwrite it. This lets users
+            // recover manually-edited settings after an interrupted or invalid save.
+            if (file.isFile()) {
+                preserveCorruptConfig(file);
+            }
             loaded = new LunarSpoofConfig();
         }
         loaded.sanitize();
@@ -67,6 +73,16 @@ public final class LunarSpoofConfig {
             }
         } catch (Exception e) {
             LOGGER.warn("Could not save LunarSpoof config", e);
+        }
+    }
+
+    private static void preserveCorruptConfig(File file) {
+        File backup = new File(file.getParentFile(), file.getName() + ".corrupt");
+        try {
+            Files.copy(file.toPath(), backup.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            LOGGER.warn("Preserved unreadable LunarSpoof config as {}", backup.getName());
+        } catch (Exception e) {
+            LOGGER.warn("Could not back up unreadable LunarSpoof config", e);
         }
     }
 
