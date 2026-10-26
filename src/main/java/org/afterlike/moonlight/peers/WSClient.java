@@ -18,11 +18,11 @@ import io.netty.handler.codec.http.DefaultHttpHeaders;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpObjectAggregator;
-import io.netty.handler.codec.http.websocketx.WebSocketFrameAggregator;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
+import io.netty.handler.codec.http.websocketx.WebSocketFrameAggregator;
 import io.netty.handler.codec.http.websocketx.WebSocketVersion;
 import io.netty.handler.ssl.SslHandler;
 import java.io.ByteArrayOutputStream;
@@ -146,7 +146,7 @@ public final class WSClient {
 						});
 						ch.pipeline().addLast(sslHandler).addLast(new HttpClientCodec())
 								.addLast(new HttpObjectAggregator(65536))
-                                .addLast(new WebSocketFrameAggregator(1_048_576)).addLast(wsHandler);
+							.addLast(new WebSocketFrameAggregator(1_048_576)).addLast(wsHandler);
 					}
 				}).connect(HOST, PORT).sync();
 		channel = cf.channel();
