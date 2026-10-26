@@ -14,6 +14,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.afterlike.moonlight.Moonlight;
+import org.afterlike.moonlight.config.LunarSpoofConfig;
 import org.afterlike.moonlight.peers.auth.AuthClient;
 
 public final class SubscriptionManager {
@@ -56,7 +57,7 @@ public final class SubscriptionManager {
      */
     public static void connect(String jwt) {
         SubscriptionManager manager = instance;
-        if (manager == null || !LunarSpoofConfigAccess.iconsEnabled()) {
+        if (manager == null || !LunarSpoofConfig.get().showPeerIcons) {
             return;
         }
 
@@ -131,10 +132,4 @@ public final class SubscriptionManager {
         }
     }
 
-    /** Avoids starting/reconnecting the service after the privacy toggle was switched off. */
-    private static final class LunarSpoofConfigAccess {
-        private static boolean iconsEnabled() {
-            return org.afterlike.moonlight.config.LunarSpoofConfig.get().showPeerIcons;
-        }
-    }
 }
