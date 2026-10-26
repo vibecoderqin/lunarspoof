@@ -68,7 +68,7 @@ public class Moonlight {
             mode = "lunar";
         }
         this.brandMode = mode;
-        this.customBrand = customValue == null ? "custom-client" : customValue.trim();
+        this.customBrand = LunarSpoofConfig.sanitizeBrand(customValue);
         logger.info("Client brand mode configured as {} ({})", mode, getClientBrand());
     }
 
