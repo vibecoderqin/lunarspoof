@@ -19,130 +19,130 @@ import org.afterlike.moonlight.config.LunarSpoofConfig;
 import org.afterlike.moonlight.peers.auth.AuthClient;
 
 public final class SubscriptionManager {
-    private static volatile SubscriptionManager instance;
-    private static final AtomicLong AUTH_EPOCH = new AtomicLong();
-    private final Set<UUID> fetchedSet = ConcurrentHashMap.newKeySet();
-    private volatile WSClient wsClient;
+	private static volatile SubscriptionManager instance;
+	private static final AtomicLong AUTH_EPOCH = new AtomicLong();
+	private final Set<UUID> fetchedSet = ConcurrentHashMap.newKeySet();
+	private volatile WSClient wsClient;
 
-    private SubscriptionManager() {
-    }
+	private SubscriptionManager() {
+	}
 
-    public static void init() {
-        instance = new SubscriptionManager();
-        MinecraftForge.EVENT_BUS.register(instance);
-    }
+	public static void init() {
+		instance = new SubscriptionManager();
+		MinecraftForge.EVENT_BUS.register(instance);
+	}
 
-    public static boolean isConnected() {
-        SubscriptionManager manager = instance;
-        WSClient client = manager == null ? null : manager.wsClient;
-        return client != null && client.isConnected();
-    }
+	public static boolean isConnected() {
+		SubscriptionManager manager = instance;
+		WSClient client = manager == null ? null : manager.wsClient;
+		return client != null && client.isConnected();
+	}
 
-    /** Start a new auth attempt and invalidate callbacks belonging to older attempts. */
-    public static long beginAuthAttempt() {
-        return AUTH_EPOCH.incrementAndGet();
-    }
+	/** Start a new auth attempt and invalidate callbacks belonging to older attempts. */
+	public static long beginAuthAttempt() {
+		return AUTH_EPOCH.incrementAndGet();
+	}
 
-    /** Whether an asynchronous authentication callback still belongs to the active attempt. */
-    public static boolean isCurrentAuthAttempt(long epoch) {
-        return AUTH_EPOCH.get() == epoch;
-    }
+	/** Whether an asynchronous authentication callback still belongs to the active attempt. */
+	public static boolean isCurrentAuthAttempt(long epoch) {
+		return AUTH_EPOCH.get() == epoch;
+	}
 
-    /** Stop Lunar peer-service connections and discard cached peer data and auth state. */
-    public static void disconnect() {
-        AUTH_EPOCH.incrementAndGet();
-        SubscriptionManager manager = instance;
-        if (manager != null) {
-            WSClient oldClient = manager.wsClient;
-            manager.wsClient = null;
-            if (oldClient != null) {
-                oldClient.disconnect();
-            }
-            manager.fetchedSet.clear();
-        }
-        PeerRegistry.getInstance().clear();
-        Moonlight.get().clearAuth();
-    }
+	/** Stop Lunar peer-service connections and discard cached peer data and auth state. */
+	public static void disconnect() {
+		AUTH_EPOCH.incrementAndGet();
+		SubscriptionManager manager = instance;
+		if (manager != null) {
+			WSClient oldClient = manager.wsClient;
+			manager.wsClient = null;
+			if (oldClient != null) {
+				oldClient.disconnect();
+			}
+			manager.fetchedSet.clear();
+		}
+		PeerRegistry.getInstance().clear();
+		Moonlight.get().clearAuth();
+	}
 
-    /**
-     * Starts a fresh connection using the JWT already fetched for this session.
-     * Subsequent reconnect attempts fetch a fresh JWT rather than reusing an expired one.
-     */
-    public static void connect(String jwt) {
-        SubscriptionManager manager = instance;
-        if (manager == null || !LunarSpoofConfig.get().showPeerIcons) {
-            return;
-        }
+	/**
+	 * Starts a fresh connection using the JWT already fetched for this session.
+	 * Subsequent reconnect attempts fetch a fresh JWT rather than reusing an expired one.
+	 */
+	public static void connect(String jwt) {
+		SubscriptionManager manager = instance;
+		if (manager == null || !LunarSpoofConfig.get().showPeerIcons) {
+			return;
+		}
 
-        WSClient oldClient = manager.wsClient;
-        manager.wsClient = null;
-        if (oldClient != null) {
-            oldClient.disconnect();
-        }
-        manager.fetchedSet.clear();
-        PeerRegistry.getInstance().clear();
+		WSClient oldClient = manager.wsClient;
+		manager.wsClient = null;
+		if (oldClient != null) {
+			oldClient.disconnect();
+		}
+		manager.fetchedSet.clear();
+		PeerRegistry.getInstance().clear();
 
-        final WSClient client = new WSClient();
-        final AtomicReference<String> initialJwt = new AtomicReference<>(jwt);
-        manager.wsClient = client;
-        client.setOnReconnect(() -> {
-            if (instance == manager && manager.wsClient == client) {
-                manager.fetchedSet.clear();
-            }
-        });
-        client.connect(() -> {
-            String cachedJwt = initialJwt.getAndSet(null);
-            if (cachedJwt != null && !cachedJwt.trim().isEmpty()) {
-                return cachedJwt;
-            }
-            return AuthClient.fetchJwt();
-        });
-    }
+		final WSClient client = new WSClient();
+		final AtomicReference<String> initialJwt = new AtomicReference<>(jwt);
+		manager.wsClient = client;
+		client.setOnReconnect(() -> {
+			if (instance == manager && manager.wsClient == client) {
+				manager.fetchedSet.clear();
+			}
+		});
+		client.connect(() -> {
+			String cachedJwt = initialJwt.getAndSet(null);
+			if (cachedJwt != null && !cachedJwt.trim().isEmpty()) {
+				return cachedJwt;
+			}
+			return AuthClient.fetchJwt();
+		});
+	}
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
-        WSClient client = wsClient;
-        if (event.phase != TickEvent.Phase.START || client == null || !client.isConnected()) {
-            return;
-        }
-        syncWithTabList(client);
-    }
+	@SubscribeEvent
+	public void onClientTick(TickEvent.ClientTickEvent event) {
+		WSClient client = wsClient;
+		if (event.phase != TickEvent.Phase.START || client == null || !client.isConnected()) {
+			return;
+		}
+		syncWithTabList(client);
+	}
 
-    private void syncWithTabList(WSClient client) {
-        Minecraft mc = Minecraft.getMinecraft();
-        NetHandlerPlayClient netHandler = mc.getNetHandler();
-        if (netHandler == null || mc.thePlayer == null) {
-            return;
-        }
-        UUID self = mc.thePlayer.getUniqueID();
-        Collection<NetworkPlayerInfo> tabList = netHandler.getPlayerInfoMap();
-        Set<UUID> current = new java.util.HashSet<>();
-        for (NetworkPlayerInfo info : tabList) {
-            UUID uuid = info.getGameProfile().getId();
-            if (!uuid.equals(self)) {
-                current.add(uuid);
-            }
-        }
-        List<UUID> toFetch = new ArrayList<>();
-        for (UUID uuid : current) {
-            if (!fetchedSet.contains(uuid)) {
-                toFetch.add(uuid);
-            }
-        }
-        if (!toFetch.isEmpty()) {
-            fetchedSet.addAll(toFetch);
-            client.loadTabLogos(toFetch);
-        }
-        List<UUID> left = new ArrayList<>();
-        for (UUID uuid : fetchedSet) {
-            if (!current.contains(uuid)) {
-                left.add(uuid);
-            }
-        }
-        if (!left.isEmpty()) {
-            left.forEach(fetchedSet::remove);
-            left.forEach(u -> PeerRegistry.getInstance().remove(u));
-        }
-    }
+	private void syncWithTabList(WSClient client) {
+		Minecraft mc = Minecraft.getMinecraft();
+		NetHandlerPlayClient netHandler = mc.getNetHandler();
+		if (netHandler == null || mc.thePlayer == null) {
+			return;
+		}
+		UUID self = mc.thePlayer.getUniqueID();
+		Collection<NetworkPlayerInfo> tabList = netHandler.getPlayerInfoMap();
+		Set<UUID> current = new java.util.HashSet<>();
+		for (NetworkPlayerInfo info : tabList) {
+			UUID uuid = info.getGameProfile().getId();
+			if (!uuid.equals(self)) {
+				current.add(uuid);
+			}
+		}
+		List<UUID> toFetch = new ArrayList<>();
+		for (UUID uuid : current) {
+			if (!fetchedSet.contains(uuid)) {
+				toFetch.add(uuid);
+			}
+		}
+		if (!toFetch.isEmpty()) {
+			fetchedSet.addAll(toFetch);
+			client.loadTabLogos(toFetch);
+		}
+		List<UUID> left = new ArrayList<>();
+		for (UUID uuid : fetchedSet) {
+			if (!current.contains(uuid)) {
+				left.add(uuid);
+			}
+		}
+		if (!left.isEmpty()) {
+			left.forEach(fetchedSet::remove);
+			left.forEach(u -> PeerRegistry.getInstance().remove(u));
+		}
+	}
 
 }
