@@ -22,6 +22,7 @@ import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
+import io.netty.handler.codec.http.websocketx.WebSocketFrameAggregator;
 import io.netty.handler.codec.http.websocketx.WebSocketVersion;
 import io.netty.handler.ssl.SslHandler;
 import java.io.ByteArrayOutputStream;
@@ -53,6 +54,7 @@ public final class WSClient {
 	private static final String COSMETIC_SERVICE = "lunarclient.websocket.cosmetic.v2.CosmeticService";
 	private static final String HEARTBEAT_SERVICE = "lunarclient.websocket.heartbeat.v1.HeartbeatService";
 	private static final long MAX_BACKOFF_MS = 30_000;
+	private static final long WEBSOCKET_HANDSHAKE_TIMEOUT_MS = 15_000;
 	private static final long HEARTBEAT_INTERVAL_MS = 60_000;
 	private final AtomicInteger requestCounter = new AtomicInteger(1);
 	private final Set<String> pendingLoginIds = ConcurrentHashMap.newKeySet();
@@ -80,13 +82,24 @@ public final class WSClient {
 				group = new NioEventLoopGroup(1);
 				try {
 					String jwt = jwtFetcher.call();
+					// The privacy toggle may be switched off while authentication is in flight.
+					if (!shouldReconnect) {
+						break;
+					}
+					if (jwt == null || jwt.trim().isEmpty()) {
+						throw new IOException("Lunar authentication returned an empty token");
+					}
 					establishConnection(jwt);
+					if (wsReady) {
+						backoff = 2000;
+					}
 				} catch (Exception e) {
 					LOGGER.warn("Connection failed: {}", e.getMessage());
 				} finally {
 					wsReady = false;
 					stopHeartbeat();
 					channel = null;
+					pendingLoginIds.clear();
 					group.shutdownGracefully(0, 5, TimeUnit.SECONDS);
 				}
 				if (!shouldReconnect)
@@ -132,10 +145,17 @@ public final class WSClient {
 							}
 						});
 						ch.pipeline().addLast(sslHandler).addLast(new HttpClientCodec())
-								.addLast(new HttpObjectAggregator(65536)).addLast(wsHandler);
+								.addLast(new HttpObjectAggregator(65536))
+							.addLast(new WebSocketFrameAggregator(1_048_576)).addLast(wsHandler);
 					}
 				}).connect(HOST, PORT).sync();
 		channel = cf.channel();
+		// disconnect() can race with the blocking TCP connect; close immediately if
+		// the caller opted out before the connected channel was published.
+		if (!shouldReconnect) {
+			channel.close();
+			return;
+		}
 		channel.closeFuture().sync();
 	}
 
@@ -180,10 +200,14 @@ public final class WSClient {
 	}
 
 	private String send(String service, String method, byte[] input) throws IOException {
+		Channel activeChannel = channel;
+		if (!wsReady || activeChannel == null || !activeChannel.isActive()) {
+			throw new IOException("Lunar WebSocket is not connected");
+		}
 		String id = Integer.toString(requestCounter.getAndIncrement());
 		byte[] msg = encodeServerboundMessage(id.getBytes(StandardCharsets.UTF_8), service, method,
 				input);
-		channel.writeAndFlush(new BinaryWebSocketFrame(Unpooled.wrappedBuffer(msg)));
+		activeChannel.writeAndFlush(new BinaryWebSocketFrame(Unpooled.wrappedBuffer(msg)));
 		return id;
 	}
 
@@ -456,15 +480,47 @@ public final class WSClient {
 	private class WsHandler extends SimpleChannelInboundHandler<Object> {
 		private final WebSocketClientHandshaker handshaker;
 		private final String jwt;
+		private volatile ScheduledFuture<?> websocketHandshakeTimeout;
+
 		WsHandler(WebSocketClientHandshaker handshaker, String jwt) {
 			this.handshaker = handshaker;
 			this.jwt = jwt;
 		}
 
 		@Override
+		public void channelActive(ChannelHandlerContext ctx) throws Exception {
+			websocketHandshakeTimeout = ctx.executor().schedule(() -> {
+				if (!handshaker.isHandshakeComplete()) {
+					LOGGER.warn("Lunar WebSocket upgrade timed out");
+					ctx.close();
+				}
+			}, WEBSOCKET_HANDSHAKE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+			ctx.fireChannelActive();
+		}
+
+		@Override
+		public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+			ScheduledFuture<?> timeout = websocketHandshakeTimeout;
+			if (timeout != null) {
+				timeout.cancel(false);
+				websocketHandshakeTimeout = null;
+			}
+			ctx.fireChannelInactive();
+		}
+
+		private void cancelWebSocketHandshakeTimeout() {
+			ScheduledFuture<?> timeout = websocketHandshakeTimeout;
+			if (timeout != null) {
+				timeout.cancel(false);
+				websocketHandshakeTimeout = null;
+			}
+		}
+
+		@Override
 		protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
 			if (!handshaker.isHandshakeComplete()) {
 				handshaker.finishHandshake(ctx.channel(), (FullHttpResponse) msg);
+				cancelWebSocketHandshakeTimeout();
 				ctx.channel().writeAndFlush(
 						new BinaryWebSocketFrame(Unpooled.wrappedBuffer(encodeHandshake(jwt))))
 						.addListener(f -> {

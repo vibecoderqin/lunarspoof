@@ -106,7 +106,7 @@ public final class LunarSpoofCommand extends CommandBase {
         }
         if ("custom".equals(mode)) {
             if (args.length < 3) { usage(sender, "/lunarspoof brand custom <text>"); return; }
-            config.customBrand = LunarSpoofConfig.trimTo(join(args, 2), 128);
+            config.customBrand = LunarSpoofConfig.sanitizeBrand(join(args, 2));
             if (config.customBrand.isEmpty()) { error(sender, "Custom brand cannot be empty."); return; }
         }
         config.brandMode = mode;
@@ -165,7 +165,7 @@ public final class LunarSpoofCommand extends CommandBase {
         }
         if ("image".equalsIgnoreCase(args[1])) {
             if (args.length != 3) { usage(sender, "/lunarspoof rpc image <asset-key|off>"); return; }
-            config.discordLargeImageKey = "off".equalsIgnoreCase(args[2]) ? "" : args[2].trim();
+            config.discordLargeImageKey = "off".equalsIgnoreCase(args[2]) ? "" : LunarSpoofConfig.trimTo(args[2], 256);
             config.save();
             DiscordPresenceManager.updatePresence();
             success(sender, "Discord large image setting updated. Asset keys must exist in your Discord application.");

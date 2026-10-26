@@ -20,7 +20,7 @@ import org.afterlike.moonlight.version.VersionFetcher;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@Mod(modid = "lunarspoof", name = "LunarSpoof", version = "1.1.0", clientSideOnly = true, useMetadata = false)
+@Mod(modid = "lunarspoof", name = "LunarSpoof", version = org.afterlike.moonlight.BuildConstants.VERSION, clientSideOnly = true, useMetadata = false)
 public class ForgeModEntry {
     private static final Logger LOGGER = LogManager.getLogger();
 
@@ -53,7 +53,7 @@ public class ForgeModEntry {
     }
 
     /**
-     * Peer-icon detection uses the Lunar authentication and websocket endpoints.
+     * Peer-icon detection uses Lunar authentication and websocket endpoints.
      * The raw Minecraft session token is not saved by LunarSpoof.
      */
     @SubscribeEvent
@@ -67,9 +67,17 @@ public class ForgeModEntry {
                 && SubscriptionManager.isConnected()) {
             return;
         }
-        Moonlight.get().clearAuth();
+        // Stop an old account's service socket before starting fresh authentication.
+        SubscriptionManager.disconnect();
+        final long authAttempt = SubscriptionManager.beginAuthAttempt();
         AuthClient.fetchJwtAsync(jwt -> {
-            if (!LunarSpoofConfig.get().showPeerIcons) {
+            if (!LunarSpoofConfig.get().showPeerIcons
+                    || !SubscriptionManager.isCurrentAuthAttempt(authAttempt)) {
+                return;
+            }
+            UUID liveUuid = Minecraft.getMinecraft().getSession().getProfile().getId();
+            if (currentUuid == null || !currentUuid.equals(liveUuid)) {
+                LOGGER.debug("Ignoring stale Lunar authentication result after session change");
                 return;
             }
             Moonlight.get().setAuthenticatorJwt(jwt, currentUuid);

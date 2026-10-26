@@ -2,10 +2,12 @@ package org.afterlike.moonlight.peers;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.client.network.NetworkPlayerInfo;
@@ -13,12 +15,15 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.afterlike.moonlight.Moonlight;
+import org.afterlike.moonlight.config.LunarSpoofConfig;
 import org.afterlike.moonlight.peers.auth.AuthClient;
 
 public final class SubscriptionManager {
-	private static SubscriptionManager instance;
-	private final Set<UUID> fetchedSet = new HashSet<>();
-	private WSClient wsClient;
+	private static volatile SubscriptionManager instance;
+	private static final AtomicLong AUTH_EPOCH = new AtomicLong();
+	private final Set<UUID> fetchedSet = ConcurrentHashMap.newKeySet();
+	private volatile WSClient wsClient;
+
 	private SubscriptionManager() {
 	}
 
@@ -28,60 +33,90 @@ public final class SubscriptionManager {
 	}
 
 	public static boolean isConnected() {
-		return instance != null && instance.wsClient != null && instance.wsClient.isConnected();
+		SubscriptionManager manager = instance;
+		WSClient client = manager == null ? null : manager.wsClient;
+		return client != null && client.isConnected();
 	}
 
-	/** Stop Lunar peer-service connections and discard cached peer data. */
+	/** Start a new auth attempt and invalidate callbacks belonging to older attempts. */
+	public static long beginAuthAttempt() {
+		return AUTH_EPOCH.incrementAndGet();
+	}
+
+	/** Whether an asynchronous authentication callback still belongs to the active attempt. */
+	public static boolean isCurrentAuthAttempt(long epoch) {
+		return AUTH_EPOCH.get() == epoch;
+	}
+
+	/** Stop Lunar peer-service connections and discard cached peer data and auth state. */
 	public static void disconnect() {
-		if (instance == null)
-			return;
-		if (instance.wsClient != null) {
-			instance.wsClient.disconnect();
-			instance.wsClient = null;
+		AUTH_EPOCH.incrementAndGet();
+		SubscriptionManager manager = instance;
+		if (manager != null) {
+			WSClient oldClient = manager.wsClient;
+			manager.wsClient = null;
+			if (oldClient != null) {
+				oldClient.disconnect();
+			}
+			manager.fetchedSet.clear();
 		}
-		instance.fetchedSet.clear();
 		PeerRegistry.getInstance().clear();
+		Moonlight.get().clearAuth();
 	}
 
 	/**
-	 * Disconnects any existing WS and creates a fresh connection. Called on first
-	 * auth and on account switch.
+	 * Starts a fresh connection using the JWT already fetched for this session.
+	 * Subsequent reconnect attempts fetch a fresh JWT rather than reusing an expired one.
 	 */
 	public static void connect(String jwt) {
-		if (instance == null)
+		SubscriptionManager manager = instance;
+		if (manager == null || !LunarSpoofConfig.get().showPeerIcons) {
 			return;
-		if (instance.wsClient != null) {
-			instance.wsClient.disconnect();
 		}
-		instance.fetchedSet.clear();
+
+		WSClient oldClient = manager.wsClient;
+		manager.wsClient = null;
+		if (oldClient != null) {
+			oldClient.disconnect();
+		}
+		manager.fetchedSet.clear();
 		PeerRegistry.getInstance().clear();
-		instance.wsClient = new WSClient();
-		instance.wsClient.setOnReconnect(() -> {
-			instance.fetchedSet.clear();
+
+		final WSClient client = new WSClient();
+		final AtomicReference<String> initialJwt = new AtomicReference<>(jwt);
+		manager.wsClient = client;
+		client.setOnReconnect(() -> {
+			if (instance == manager && manager.wsClient == client) {
+				manager.fetchedSet.clear();
+			}
 		});
-		instance.wsClient.connect(() -> {
-			String freshJwt = AuthClient.fetchJwt();
-			Moonlight.get().setAuthenticatorJwt(freshJwt,
-					Minecraft.getMinecraft().getSession().getProfile().getId());
-			return freshJwt;
+		client.connect(() -> {
+			String cachedJwt = initialJwt.getAndSet(null);
+			if (cachedJwt != null && !cachedJwt.trim().isEmpty()) {
+				return cachedJwt;
+			}
+			return AuthClient.fetchJwt();
 		});
 	}
 
 	@SubscribeEvent
 	public void onClientTick(TickEvent.ClientTickEvent event) {
-		if (event.phase != TickEvent.Phase.START || wsClient == null || !wsClient.isConnected())
+		WSClient client = wsClient;
+		if (event.phase != TickEvent.Phase.START || client == null || !client.isConnected()) {
 			return;
-		syncWithTabList();
+		}
+		syncWithTabList(client);
 	}
 
-	private void syncWithTabList() {
+	private void syncWithTabList(WSClient client) {
 		Minecraft mc = Minecraft.getMinecraft();
 		NetHandlerPlayClient netHandler = mc.getNetHandler();
-		if (netHandler == null || mc.thePlayer == null)
+		if (netHandler == null || mc.thePlayer == null) {
 			return;
+		}
 		UUID self = mc.thePlayer.getUniqueID();
 		Collection<NetworkPlayerInfo> tabList = netHandler.getPlayerInfoMap();
-		Set<UUID> current = new HashSet<>();
+		Set<UUID> current = new java.util.HashSet<>();
 		for (NetworkPlayerInfo info : tabList) {
 			UUID uuid = info.getGameProfile().getId();
 			if (!uuid.equals(self)) {
@@ -96,7 +131,7 @@ public final class SubscriptionManager {
 		}
 		if (!toFetch.isEmpty()) {
 			fetchedSet.addAll(toFetch);
-			wsClient.loadTabLogos(toFetch);
+			client.loadTabLogos(toFetch);
 		}
 		List<UUID> left = new ArrayList<>();
 		for (UUID uuid : fetchedSet) {
@@ -109,4 +144,5 @@ public final class SubscriptionManager {
 			left.forEach(u -> PeerRegistry.getInstance().remove(u));
 		}
 	}
+
 }

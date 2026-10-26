@@ -7,6 +7,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import net.minecraft.client.Minecraft;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -17,17 +18,17 @@ public final class LunarSpoofConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static volatile LunarSpoofConfig instance = new LunarSpoofConfig();
 
-    public String brandMode = "lunar";
-    public String customBrand = "custom-client";
-    public boolean hideForgeHandshake = true;
-    public boolean showPeerIcons = true;
+    public volatile String brandMode = "lunar";
+    public volatile String customBrand = "custom-client";
+    public volatile boolean hideForgeHandshake = true;
+    public volatile boolean showPeerIcons = true;
 
-    public boolean discordRpcEnabled = false;
-    public String discordApplicationId = "";
-    public String discordDetails = "Minecraft 1.8.9";
-    public String discordState = "Lunar Client";
-    public String discordLargeImageKey = "lunar_logo";
-    public String discordLargeImageText = "Lunar Client • Minecraft 1.8.9";
+    public volatile boolean discordRpcEnabled = false;
+    public volatile String discordApplicationId = "";
+    public volatile String discordDetails = "Minecraft 1.8.9";
+    public volatile String discordState = "Lunar Client";
+    public volatile String discordLargeImageKey = "lunar_logo";
+    public volatile String discordLargeImageText = "Lunar Client • Minecraft 1.8.9";
 
     private LunarSpoofConfig() {
     }
@@ -47,6 +48,11 @@ public final class LunarSpoofConfig {
             }
         }
         if (loaded == null) {
+            // Preserve an unreadable file before defaults overwrite it. This lets users
+            // recover manually-edited settings after an interrupted or invalid save.
+            if (file.isFile()) {
+                preserveCorruptConfig(file);
+            }
             loaded = new LunarSpoofConfig();
         }
         loaded.sanitize();
@@ -70,6 +76,16 @@ public final class LunarSpoofConfig {
         }
     }
 
+    private static void preserveCorruptConfig(File file) {
+        File backup = new File(file.getParentFile(), file.getName() + ".corrupt");
+        try {
+            Files.copy(file.toPath(), backup.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            LOGGER.warn("Preserved unreadable LunarSpoof config as {}", backup.getName());
+        } catch (Exception e) {
+            LOGGER.warn("Could not back up unreadable LunarSpoof config", e);
+        }
+    }
+
     public static File getFile() {
         return new File(new File(Minecraft.getMinecraft().mcDataDir, "config"), "lunarspoof.json");
     }
@@ -84,7 +100,7 @@ public final class LunarSpoofConfig {
             brandMode = brandMode.toLowerCase(java.util.Locale.ROOT);
         }
         if (customBrand == null) customBrand = "custom-client";
-        customBrand = trimTo(customBrand, 128);
+        customBrand = sanitizeBrand(customBrand);
         if (discordApplicationId == null) discordApplicationId = "";
         discordApplicationId = discordApplicationId.trim();
         if (discordDetails == null || discordDetails.trim().isEmpty()) discordDetails = "Minecraft 1.8.9";
@@ -95,6 +111,12 @@ public final class LunarSpoofConfig {
         discordLargeImageKey = trimTo(discordLargeImageKey, 256);
         if (discordLargeImageText == null) discordLargeImageText = "";
         discordLargeImageText = trimTo(discordLargeImageText, 128);
+    }
+
+    /** Strip control characters before a user-supplied brand reaches network payloads or logs. */
+    public static String sanitizeBrand(String value) {
+        if (value == null) return "custom-client";
+        return trimTo(value.replaceAll("[\\p{Cntrl}]", ""), 128);
     }
 
     public static String trimTo(String value, int maxLength) {
