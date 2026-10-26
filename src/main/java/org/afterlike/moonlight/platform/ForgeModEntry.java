@@ -20,7 +20,7 @@ import org.afterlike.moonlight.version.VersionFetcher;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@Mod(modid = "lunarspoof", name = "LunarSpoof", version = "1.1.1", clientSideOnly = true, useMetadata = false)
+@Mod(modid = "lunarspoof", name = "LunarSpoof", version = org.afterlike.moonlight.BuildConstants.VERSION, clientSideOnly = true, useMetadata = false)
 public class ForgeModEntry {
     private static final Logger LOGGER = LogManager.getLogger();
 
