@@ -150,6 +150,12 @@ public final class WSClient {
 					}
 				}).connect(HOST, PORT).sync();
 		channel = cf.channel();
+		// disconnect() can race with the blocking TCP connect; close immediately if
+		// the caller opted out before the connected channel was published.
+		if (!shouldReconnect) {
+			channel.close();
+			return;
+		}
 		channel.closeFuture().sync();
 	}
 
