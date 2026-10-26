@@ -371,7 +371,7 @@ public final class LunarSpoofClickGui extends GuiScreen {
     }
 
     private void commitTextFields(boolean save) {
-        if (customBrandField != null) config.customBrand = LunarSpoofConfig.trimTo(customBrandField.getText(), 128);
+        if (customBrandField != null) config.customBrand = LunarSpoofConfig.sanitizeBrand(customBrandField.getText());
         if (applicationIdField != null) config.discordApplicationId = applicationIdField.getText().trim();
         if (detailsField != null) config.discordDetails = LunarSpoofConfig.trimTo(detailsField.getText(), 128);
         if (stateField != null) config.discordState = LunarSpoofConfig.trimTo(stateField.getText(), 128);
